@@ -35,13 +35,108 @@ async function startServer() {
       const { type, todayTasks, yesterdayPerformance, dayOfWeek, userQuery, chatHistory } = req.body;
 
       if (!process.env.GEMINI_API_KEY) {
-        return res.json({
-          text: `⚠️ **API Key Missing**: The server's \`GEMINI_API_KEY\` environment variable is not defined. 
-          Please add a valid Gemini key in the **Settings > Secrets** panel of Google AI Studio. 
-          
-          Meanwhile, here is an example recommendation:
-          "Today is a new day! Since we can't access the AI, let's keep it simple. Prioritize 1 fitness block and 1 meal block. You got this!"`
-        });
+        // High-Quality Rule-Based Heuristic Expert Advice Fallback
+        if (type === 'morning_plan') {
+          // 1. Warm Greeting & Day of week nuance
+          let greeting = `### ☀️ Good morning! Happy ${dayOfWeek || "today"}.\n\n`;
+          const isWeekend = dayOfWeek === "Saturday" || dayOfWeek === "Sunday";
+          if (isWeekend) {
+            greeting += `Since it's the weekend, your brain naturally seeks a change of speed. Treat today as a beautiful mix of conscious restoration and lightness.\n\n`;
+          } else {
+            greeting += `A structured weekday represents a fantastic canvas for focus, growth, and continuous improvement. Let's make steady, incremental progress.\n\n`;
+          }
+
+          // 2. Analyze today's task list composition
+          let todayFocus = "";
+          let workoutTask = todayTasks?.find((t: any) => t.category === 'fitness');
+          let workTask = todayTasks?.find((t: any) => t.category === 'work');
+          let morningTask = todayTasks?.find((t: any) => t.category === 'morning');
+          let eveningTask = todayTasks?.find((t: any) => t.category === 'evening');
+
+          if (todayTasks && todayTasks.length > 0) {
+            todayFocus += `You have **${todayTasks.length} habit blocks** programmed today. `;
+            if (morningTask) {
+              todayFocus += `Start of your day is anchored by **${morningTask.name}**. Setting a quiet, offline intention here will protect your peace high into the afternoon. `;
+            }
+            if (workTask) {
+              todayFocus += `Your primary productivity peak is **${workTask.name}** (${workTask.duration} min). Mute your notifications during this slot to access flow state. `;
+            }
+            if (workoutTask) {
+              todayFocus += `For high energy, respect your scheduled wellness block: **${workoutTask.name}**. Your mind will feel incredibly clear afterward! `;
+            } else {
+              todayFocus += `We don't see a fitness block today – consider taking a quick 10-minute dynamic stroll outside to stay active. `;
+            }
+          } else {
+            todayFocus += `Your schedule looks incredibly spacious today! Use this open white space on your calendar to reflect, read, and restore your baseline energy. `;
+          }
+          todayFocus += `\n\n`;
+
+          // 3. Yesterday performance analysis
+          let historyInsight = "";
+          if (yesterdayPerformance) {
+            const completed = yesterdayPerformance.completed || 0;
+            const total = yesterdayPerformance.total || 0;
+            const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            if (rate >= 80) {
+              historyInsight = `### 🏆 Yesterday's Performance Summary\nYou had an outstanding run yesterday, completing **${completed} of ${total} tasks (${rate}%)**! You are building deep, bulletproof consistency. Ride this beautiful momentum, but don't force perfection if you feel a crash coming. Consistency is about averages.\n\n`;
+            } else if (rate > 0) {
+              historyInsight = `### ⚖️ Maintaining Balanced Rhythm\nYesterday you checked off **${completed} of ${total} blocks (${rate}%)**. That is a wonderful foundation! Don't look at skipped tasks as failures — they are simply calibration data. Let's isolate today's most crucial habit and nail that one first.\n\n`;
+            } else {
+              historyInsight = `### 🌱 A Clean Canvas Today\nYesterday was a full rest and off-screen day (**${completed}/${total} completed**). That is excellent! Every great routine needs deep downtime. Refresh your mind and treat this morning as a completely pristine launchpad.\n\n`;
+            }
+          } else {
+            historyInsight = `### ✨ Kickoff Your Routine\nThis is your initial day tracking consistency with us! Welcome. Our smart notification alarms are active. Remember: the first step is simply showing up. Don't worry about completing everything — focus on proving you can form the habit interface.\n\n`;
+          }
+
+          // 4. Actionable pacing advice & motivational quote generator
+          const advisoryClosing = `### 💡 Today's Focus Action
+* **Pacing Advice**: Focus on establishing a transition routine 15 minutes prior to blocks. When moving into a work block, drink a full glass of water and take 3 deep belly breaths.
+* **Motto for Today**: *"You do not rise to the level of your goals. You fall to the level of your systems."* — James Clear`;
+
+          const localAdvice = `${greeting}${todayFocus}${historyInsight}${advisoryClosing}\n\n*💡 AI Key Inactive: This daily counsel was processed locally by our smart heuristic advisor system.*`;
+          return res.json({ text: localAdvice });
+        } else if (type === 'ask_ai') {
+          // Interactive advisor matches questions to custom templates
+          const lowercaseQuery = (userQuery || "").toLowerCase();
+          let responseText = "";
+
+          if (lowercaseQuery.includes("tired") || lowercaseQuery.includes("fatigue") || lowercaseQuery.includes("skip") || lowercaseQuery.includes("exhausted")) {
+            responseText = `### 🛌 Listening to Your Body (Fatigue Protocols)
+When fatigue sets in, the most productive thing you can do is **intelligent scaling** rather than trying to power through. Here is your survival strategy:
+
+1. **Shorten, Don't Skip**: Instead of abandoning a task entirely, do a "micro-dose". If a workout is 60 minutes, scale it to a gentle 10-minute walk or stretch. Maintain the habit shape without the metabolic cost.
+2. **Postpone Intense Cognitive Work**: Shift high-intensity focus work to tomorrow or a lighter block. Take scheduled, screen-free mini breaks.
+3. **Double Down on Evening Wind-down**: Give yourself permission to slide into rest 45 minutes earlier tonight. Dim the lights and drink warm chamomile tea.`;
+          } else if (lowercaseQuery.includes("evening") || lowercaseQuery.includes("night") || lowercaseQuery.includes("sleep") || lowercaseQuery.includes("wind-down")) {
+            responseText = `### 🌙 Evening Recovery Architecture
+A premium evening routine is the anchor of tomorrow's focus. Aim for this sequential transition:
+
+* **T-Minus 60 Min (No Active Inputs)**: Close your laptop, mute work-related chats, and plug in your phone in another room or far from your mattress.
+* **T-Minus 30 Min (Sensory Calm)**: Put on comfortable clothing, dim your overhead lighting, and listen to instrumental lofi or absolute quiet. 
+* **T-Minus 15 Min (Review and Release)**: Quickly log your habits inside our tracker, congratulate yourself on any wins, and write down 2 focuses for tomorrow so your subconscious doesn't carry them.`;
+          } else if (lowercaseQuery.includes("workout") || lowercaseQuery.includes("fitness") || lowercaseQuery.includes("gym")) {
+            responseText = `### ⚡ Building Your Wellness Momentum
+Consistency with exercise is built on **low friction**, not raw willpower. 
+
+* **Prepare the Night Before**: Layout your trainers, activewear, and pre-workout water flask. When the alarm triggers, you have zero decisions to make.
+* **Anchor with Music**: Associate your fitness blocks with a highly dynamic, inspiring playlist that you only listen to during activity.
+* **The 5-Minute Rule**: Commit to exercising for just 5 minutes. If you still want to stop, you are fully permitted. 90% of the time, the momentum keeps you going.`;
+          } else {
+            // General multi-use productivity prompt
+            responseText = `### 🌟 Designing Your Best Day
+Here is my core philosophy for your everyday rhythm:
+
+* **Protect the Morning**: Keep the first hour of your day free from external notifications, emails, and news of the world. Anchor it with quiet breathing or meditation.
+* **Eliminate Context Switching**: Multi-tasking is a myth. Pick one task, set a countdown timer for 25-45 minutes, and close all opposing browser tabs.
+* **Celebrate Tiny Wins**: Positive reinforcement entrenches habit loops in your brain's neural pathways. Checking off items on this routine tracker is a powerful, visual way to prove your wins.
+
+Let me know if you would like me to unpack a specific advice block for today's tasks!`;
+          }
+
+          responseText += `\n\n*💡 Smart Local Fallback: Answers compiled autonomously by the tracker's heuristic engine because no AI API key is initialized.*`;
+          return res.json({ text: responseText });
+        }
       }
 
       const baseSystemPrompt = `You are a warm, highly empathetic, practical, and encouraging personal productivity advisor.
