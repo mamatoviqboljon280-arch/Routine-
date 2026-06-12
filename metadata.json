@@ -1,0 +1,6 @@
+{
+  "name": "Daily Routine Tracker",
+  "description": "Daily routine tracker with a color-coded schedule, progress charts, streak counter, smart reminders, custom routine editor, and a server-side AI Daily Advisor.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
